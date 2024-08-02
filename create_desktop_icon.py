@@ -10,7 +10,7 @@ def create_shortcut():
         # Define the target path (where the shortcut points to)
         target = os.path.join(os.getcwd(), "main.py")
         # Define the icon path
-        icon = os.path.join(os.getcwd(), "icon_nobg.png")
+        icon = os.path.join(os.getcwd(), "icon_nobg.ico")
 
         # Create the shortcut
         winshell.CreateShortcut(
