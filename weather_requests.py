@@ -22,7 +22,7 @@ def get_weather(latitude, longitude):
 
         # Return the weather information as a string
         return (f"Current weather as of {weather_time}:\n"
-                f"Temperature: {temperature}°C\n"
+                f"Temperature: {temperature} C\n"
                 f"Windspeed: {windspeed} km/h")
     else:
         return "Failed to get weather data."
