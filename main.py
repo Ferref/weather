@@ -6,7 +6,6 @@ from kivy.uix.boxlayout import BoxLayout
 from kivy.uix.image import Image
 from kivy.uix.floatlayout import FloatLayout
 from kivy.core.window import Window
-from kivy.clock import Clock
 from kivy.metrics import dp
 from kivy.graphics import Color, Rectangle
 import weather_requests  # Import the weather_requests module
@@ -36,15 +35,15 @@ class MyApp(App):
         self.layout.pos_hint = {'center_x': 0.5, 'center_y': 0.5}
 
         # Create Button for country
-        self.country_button = Button(text='Choose Country', size_hint=(1, 0.1), font_name='white.otf', font_size='24sp')
+        self.country_button = Button(text='Choose Country', size_hint=(1, 0.1), font_name='white.otf', font_size='40sp')
         self.country_button.bind(on_release=self.show_countries)
 
         # Create Button for city
-        self.city_button = Button(text='Choose City', size_hint=(1, 0.1), font_name='white.otf', font_size='24sp')
+        self.city_button = Button(text='Choose City', size_hint=(1, 0.1), font_name='white.otf', font_size='40sp')
         self.city_button.bind(on_release=self.show_cities)
         self.city_button.disabled = True  # Initially disabled until country is chosen
 
-        self.weather_label = Label(text="Weather info will be shown here", size_hint=(1, 0.8), font_name='white.otf', font_size='24sp', color=(0, 0, 0, 1))
+        self.weather_label = Label(text="Weather info will be shown here", size_hint=(1, 0.8), font_name='white.otf', font_size='40sp', color=(0, 0, 0, 1))
 
         self.layout.add_widget(self.country_button)
         self.layout.add_widget(self.city_button)
@@ -60,7 +59,7 @@ class MyApp(App):
 
     def show_countries(self, instance):
         self.country_dropdown = DropDown()
-        btn = Button(text='Hungary', size_hint_y=None, height=dp(44), font_name='white.otf', font_size='18sp')
+        btn = Button(text='Hungary', size_hint_y=None, height=dp(44), font_name='white.otf', font_size='30sp')
         btn.bind(on_release=lambda btn: self.select_country(btn.text))
         self.country_dropdown.add_widget(btn)
         self.country_dropdown.open(self.country_button)
@@ -75,7 +74,7 @@ class MyApp(App):
         self.city_dropdown = DropDown()
         for city in hungarian_cities.keys():
             display_city = replace_accented_characters(city)  # Use English alphabet for display
-            btn = Button(text=display_city.capitalize(), size_hint_y=None, height=dp(44), font_name='white.otf', font_size='18sp')
+            btn = Button(text=display_city.capitalize(), size_hint_y=None, height=dp(44), font_name='white.otf', font_size='30sp')
             btn.bind(on_release=lambda btn: self.select_city(btn.text))
             self.city_dropdown.add_widget(btn)
         self.city_dropdown.open(self.city_button)
