@@ -11,6 +11,7 @@ from kivy.graphics import Color, Rectangle
 from kivy.animation import Animation
 import weather_requests
 from locations import hungarian_cities
+from datetime import datetime
 
 def replace_accented_characters(text):
     replacements = {
@@ -35,7 +36,7 @@ class MyApp(App):
         self.logo = Image(source='icon_nobg.png', size_hint=(0.5, 0.5), pos_hint={'center_x': 0.5, 'center_y': 0.5})
         self.root.add_widget(self.logo)
         
-        animation = Animation(opacity=0, duration=1)
+        animation = Animation(opacity=0, duration=0.5)  # Speed up the initial animation
         animation.bind(on_complete=self.fade_background)
         animation.start(self.logo)
 
@@ -47,7 +48,7 @@ class MyApp(App):
 
     def fade_background(self, *args):
         self.bg_color.a = 1
-        anim = Animation(a=0, duration=1)
+        anim = Animation(a=0, duration=0.5)  # Speed up the fade animation
         anim.bind(on_complete=self._change_background_image)
         anim.start(self.bg_color)
 
@@ -65,26 +66,39 @@ class MyApp(App):
         self.layout.pos_hint = {'center_x': 0.5, 'center_y': 0.5}
 
         # Make font size responsive based on window size
-        font_size = str(max(20, int(Window.width * 0.04))) + 'sp'
+        self.font_size = max(20, int(Window.width * 0.04))
+        self.font_color = (0, 0, 0, 1)  # Default font color to black
 
-        self.country_button = Button(text='Choose Country', size_hint=(1, 0.1), font_name='white.otf', font_size=font_size)
+        self.country_button = Button(text='Choose Country', size_hint=(1, 0.1), font_name='white.otf', font_size=self.font_size)
         self.country_button.bind(on_release=self.show_countries)
 
-        self.city_button = Button(text='Choose City', size_hint=(1, 0.1), font_name='white.otf', font_size=font_size)
+        self.city_button = Button(text='Choose City', size_hint=(1, 0.1), font_name='white.otf', font_size=self.font_size)
         self.city_button.bind(on_release=self.show_cities)
         self.city_button.disabled = True
 
-        self.weather_label = Label(text="Weather info will be shown here", size_hint=(1, 0.8), font_name='white.otf', font_size=font_size, color=(1, 1, 1, 1))
+        self.weather_label = Label(text="Weather info will be shown here", size_hint=(1, 0.6), font_name='white.otf', font_size=self.font_size, color=self.font_color)
 
         self.layout.add_widget(self.country_button)
         self.layout.add_widget(self.city_button)
         self.layout.add_widget(self.weather_label)
 
+        # Add buttons to adjust font size and color
+        self.font_size_layout = BoxLayout(orientation='horizontal', size_hint=(1, 0.2), spacing=dp(10))
+        self.increase_font_size_button = Button(text='A+', on_release=self.increase_font_size)
+        self.decrease_font_size_button = Button(text='A-', on_release=self.decrease_font_size)
+        self.change_font_color_button = Button(text='Change Color', on_release=self.change_font_color)
+        
+        self.font_size_layout.add_widget(self.increase_font_size_button)
+        self.font_size_layout.add_widget(self.decrease_font_size_button)
+        self.font_size_layout.add_widget(self.change_font_color_button)
+        
+        self.layout.add_widget(self.font_size_layout)
+
         self.root.add_widget(self.layout)
 
     def show_countries(self, instance):
         self.country_dropdown = DropDown()
-        btn = Button(text='Hungary', size_hint_y=None, height=dp(44), font_name='white.otf', font_size=str(max(20, int(Window.width * 0.04))) + 'sp')
+        btn = Button(text='Hungary', size_hint_y=None, height=dp(44), font_name='white.otf', font_size=self.font_size)
         btn.bind(on_release=lambda btn: self.select_country(btn.text))
         self.country_dropdown.add_widget(btn)
         self.country_dropdown.open(self.country_button)
@@ -102,7 +116,7 @@ class MyApp(App):
         self.city_dropdown = DropDown()
         for city in hungarian_cities.keys():
             display_city = replace_accented_characters(city)
-            btn = Button(text=display_city.capitalize(), size_hint_y=None, height=dp(44), font_name='white.otf', font_size=str(max(20, int(Window.width * 0.04))) + 'sp')
+            btn = Button(text=display_city.capitalize(), size_hint_y=None, height=dp(44), font_name='white.otf', font_size=self.font_size)
             btn.bind(on_release=lambda btn: self.select_city(btn.text))
             self.city_dropdown.add_widget(btn)
         self.city_dropdown.open(self.city_button)
@@ -120,12 +134,31 @@ class MyApp(App):
             self.city_dropdown.dismiss()
             
             weather_info = weather_requests.get_weather(latitude, longitude)
-            self.weather_label.text = weather_info
+            weekday = datetime.now().strftime("%A")
+            self.weather_label.text = f"{weekday}: {weather_info}"
         else:
             self.weather_label.text = "City not found."
         
         animation = Animation(opacity=1, duration=0.5)
         animation.start(self.weather_label)
+
+    def increase_font_size(self, instance):
+        self.font_size += 2
+        self.update_font_properties()
+
+    def decrease_font_size(self, instance):
+        self.font_size -= 2
+        self.update_font_properties()
+
+    def change_font_color(self, instance):
+        self.font_color = (1, 0, 0, 1) if self.font_color == (0, 0, 0, 1) else (0, 0, 0, 1)  # Toggle between black and red
+        self.update_font_properties()
+
+    def update_font_properties(self):
+        self.country_button.font_size = self.font_size
+        self.city_button.font_size = self.font_size
+        self.weather_label.font_size = self.font_size
+        self.weather_label.color = self.font_color
 
 if __name__ == "__main__":
     MyApp().run()
