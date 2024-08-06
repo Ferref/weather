@@ -5,10 +5,13 @@ from kivy.uix.button import Button
 from kivy.uix.boxlayout import BoxLayout
 from kivy.uix.image import Image
 from kivy.uix.floatlayout import FloatLayout
+from kivy.uix.screenmanager import ScreenManager, Screen
 from kivy.core.window import Window
 from kivy.metrics import dp
 from kivy.graphics import Color, Rectangle
 from kivy.animation import Animation
+from kivy.uix.slider import Slider
+from kivy.uix.colorpicker import ColorPicker
 import weather_requests
 from locations import hungarian_cities
 from datetime import datetime
@@ -21,26 +24,29 @@ def replace_accented_characters(text):
         text = text.replace(accented_char, replacement_char)
     return text
 
-class MyApp(App):
-    title = 'WeatherBunny'
-    icon = 'icon_nobg.png'
+class WeatherScreen(Screen):
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
+        self.font_size = max(20, int(Window.width * 0.04))  # Initialize font_size
+        self.font_color = (0, 0, 0, 1)  # Initialize font_color
+        self.build_ui()
 
-    def build(self):
-        self.root = FloatLayout()
+    def build_ui(self):
+        self.layout = FloatLayout()
 
-        with self.root.canvas.before:
-            self.bg_color = Color(0, 0, 0, 1)  # Set background color to black initially
+        with self.layout.canvas.before:
+            self.bg_color = Color(0, 0, 0, 1)
             self.bg = Rectangle(size=Window.size)
-            self.root.bind(size=self._update_rect, pos=self._update_rect)
+            self.layout.bind(size=self._update_rect, pos=self._update_rect)
 
         self.logo = Image(source='icon_nobg.png', size_hint=(0.5, 0.5), pos_hint={'center_x': 0.5, 'center_y': 0.5})
-        self.root.add_widget(self.logo)
+        self.layout.add_widget(self.logo)
         
-        animation = Animation(opacity=0, duration=0.5)  # Speed up the initial animation
+        animation = Animation(opacity=0, duration=0.5)
         animation.bind(on_complete=self.fade_background)
         animation.start(self.logo)
 
-        return self.root
+        self.add_widget(self.layout)
 
     def _update_rect(self, instance, value):
         self.bg.size = instance.size
@@ -48,57 +54,45 @@ class MyApp(App):
 
     def fade_background(self, *args):
         self.bg_color.a = 1
-        anim = Animation(a=0, duration=0.5)  # Speed up the fade animation
+        anim = Animation(a=0, duration=0.5)
         anim.bind(on_complete=self._change_background_image)
         anim.start(self.bg_color)
 
     def _change_background_image(self, *args):
-        with self.root.canvas.before:
-            Color(1, 1, 1, 1)  # Ensure the color is set to white for the image
+        with self.layout.canvas.before:
+            Color(1, 1, 1, 1)
             self.bg = Rectangle(source='background.jpg', size=Window.size)
-            self.root.bind(size=self._update_rect, pos=self._update_rect)
+            self.layout.bind(size=self._update_rect, pos=self._update_rect)
         self.build_main_layout()
 
     def build_main_layout(self, *args):
-        self.root.remove_widget(self.logo)
+        self.layout.remove_widget(self.logo)
 
-        self.layout = BoxLayout(orientation='vertical', padding=dp(20), spacing=dp(20), size_hint=(0.9, 0.9))
-        self.layout.pos_hint = {'center_x': 0.5, 'center_y': 0.5}
+        self.main_layout = BoxLayout(orientation='vertical', padding=dp(20), spacing=dp(20), size_hint=(0.9, 0.9))
+        self.main_layout.pos_hint = {'center_x': 0.5, 'center_y': 0.5}
 
-        # Make font size responsive based on window size
-        self.font_size = max(20, int(Window.width * 0.04))
-        self.font_color = (0, 0, 0, 1)  # Default font color to black
-
-        self.country_button = Button(text='Choose Country', size_hint=(1, 0.1), font_name='white.otf', font_size=self.font_size)
+        self.country_button = Button(text='Choose Country', size_hint=(1, 0.1), font_size=self.font_size)
         self.country_button.bind(on_release=self.show_countries)
 
-        self.city_button = Button(text='Choose City', size_hint=(1, 0.1), font_name='white.otf', font_size=self.font_size)
+        self.city_button = Button(text='Choose City', size_hint=(1, 0.1), font_size=self.font_size)
         self.city_button.bind(on_release=self.show_cities)
         self.city_button.disabled = True
 
-        self.weather_label = Label(text="Weather info will be shown here", size_hint=(1, 0.6), font_name='white.otf', font_size=self.font_size, color=self.font_color)
+        self.weather_label = Label(text="Weather info will be shown here", size_hint=(1, 0.6), font_size=self.font_size, color=self.font_color)
 
-        self.layout.add_widget(self.country_button)
-        self.layout.add_widget(self.city_button)
-        self.layout.add_widget(self.weather_label)
+        self.settings_button = Button(text='Settings', size_hint=(1, 0.1), font_size=self.font_size)
+        self.settings_button.bind(on_release=self.go_to_settings)
 
-        # Add buttons to adjust font size and color
-        self.font_size_layout = BoxLayout(orientation='horizontal', size_hint=(1, 0.2), spacing=dp(10))
-        self.increase_font_size_button = Button(text='A+', on_release=self.increase_font_size)
-        self.decrease_font_size_button = Button(text='A-', on_release=self.decrease_font_size)
-        self.change_font_color_button = Button(text='Change Color', on_release=self.change_font_color)
-        
-        self.font_size_layout.add_widget(self.increase_font_size_button)
-        self.font_size_layout.add_widget(self.decrease_font_size_button)
-        self.font_size_layout.add_widget(self.change_font_color_button)
-        
-        self.layout.add_widget(self.font_size_layout)
+        self.main_layout.add_widget(self.country_button)
+        self.main_layout.add_widget(self.city_button)
+        self.main_layout.add_widget(self.weather_label)
+        self.main_layout.add_widget(self.settings_button)
 
-        self.root.add_widget(self.layout)
+        self.layout.add_widget(self.main_layout)
 
     def show_countries(self, instance):
         self.country_dropdown = DropDown()
-        btn = Button(text='Hungary', size_hint_y=None, height=dp(44), font_name='white.otf', font_size=self.font_size)
+        btn = Button(text='Hungary', size_hint_y=None, height=dp(44), font_size=self.font_size)
         btn.bind(on_release=lambda btn: self.select_country(btn.text))
         self.country_dropdown.add_widget(btn)
         self.country_dropdown.open(self.country_button)
@@ -116,7 +110,7 @@ class MyApp(App):
         self.city_dropdown = DropDown()
         for city in hungarian_cities.keys():
             display_city = replace_accented_characters(city)
-            btn = Button(text=display_city.capitalize(), size_hint_y=None, height=dp(44), font_name='white.otf', font_size=self.font_size)
+            btn = Button(text=display_city.capitalize(), size_hint_y=None, height=dp(44), font_size=self.font_size)
             btn.bind(on_release=lambda btn: self.select_city(btn.text))
             self.city_dropdown.add_widget(btn)
         self.city_dropdown.open(self.city_button)
@@ -142,23 +136,74 @@ class MyApp(App):
         animation = Animation(opacity=1, duration=0.5)
         animation.start(self.weather_label)
 
-    def increase_font_size(self, instance):
-        self.font_size += 2
-        self.update_font_properties()
-
-    def decrease_font_size(self, instance):
-        self.font_size -= 2
-        self.update_font_properties()
-
-    def change_font_color(self, instance):
-        self.font_color = (1, 0, 0, 1) if self.font_color == (0, 0, 0, 1) else (0, 0, 0, 1)  # Toggle between black and red
-        self.update_font_properties()
+    def go_to_settings(self, instance):
+        self.manager.current = 'settings'
 
     def update_font_properties(self):
-        self.country_button.font_size = self.font_size
-        self.city_button.font_size = self.font_size
-        self.weather_label.font_size = self.font_size
-        self.weather_label.color = self.font_color
+        if hasattr(self, 'country_button'):
+            self.country_button.font_size = self.font_size
+        if hasattr(self, 'city_button'):
+            self.city_button.font_size = self.font_size
+        if hasattr(self, 'weather_label'):
+            self.weather_label.font_size = self.font_size
+            self.weather_label.color = self.font_color
+        if hasattr(self, 'settings_button'):
+            self.settings_button.font_size = self.font_size
+
+class SettingsScreen(Screen):
+    def __init__(self, weather_screen, **kwargs):
+        super().__init__(**kwargs)
+        self.weather_screen = weather_screen
+        self.build_ui()
+
+    def build_ui(self):
+        self.layout = BoxLayout(orientation='vertical', padding=dp(20), spacing=dp(20), size_hint=(0.9, 0.9))
+        self.layout.pos_hint = {'center_x': 0.5, 'center_y': 0.5}
+
+        self.font_size_label = Label(text='Font Size', size_hint=(1, 0.1), font_size=self.weather_screen.font_size)
+        self.font_size_slider = Slider(min=10, max=50, value=self.weather_screen.font_size, size_hint=(1, 0.1))
+        self.font_size_slider.bind(value=self.on_font_size_change)
+
+        self.font_color_label = Label(text='Font Color', size_hint=(1, 0.1), font_size=self.weather_screen.font_size)
+        self.color_picker = ColorPicker(size_hint=(1, 0.5))
+        self.color_picker.bind(color=self.on_color_change)
+
+        self.back_button = Button(text='Back', size_hint=(1, 0.1), font_size=self.weather_screen.font_size)
+        self.back_button.bind(on_release=self.go_back)
+
+        self.layout.add_widget(self.font_size_label)
+        self.layout.add_widget(self.font_size_slider)
+        self.layout.add_widget(self.font_color_label)
+        self.layout.add_widget(self.color_picker)
+        self.layout.add_widget(self.back_button)
+
+        self.add_widget(self.layout)
+
+    def on_font_size_change(self, instance, value):
+        self.weather_screen.font_size = int(value)
+        self.weather_screen.update_font_properties()
+
+    def on_color_change(self, instance, value):
+        self.weather_screen.font_color = value
+        self.weather_screen.update_font_properties()
+
+    def go_back(self, instance):
+        self.manager.current = 'weather'
+
+class MyApp(App):
+    title = 'WeatherBunny'
+    icon = 'icon_nobg.png'
+
+    def build(self):
+        self.sm = ScreenManager()
+
+        self.weather_screen = WeatherScreen(name='weather')
+        self.settings_screen = SettingsScreen(self.weather_screen, name='settings')
+
+        self.sm.add_widget(self.weather_screen)
+        self.sm.add_widget(self.settings_screen)
+
+        return self.sm
 
 if __name__ == "__main__":
     MyApp().run()
