@@ -28,15 +28,15 @@ class MyApp(App):
         self.root = FloatLayout()
 
         with self.root.canvas.before:
-            Color(1, 1, 1, 1)
-            self.bg = Rectangle(source='background.jpg', size=Window.size)
+            self.bg_color = Color(0, 0, 0, 1)  # Set background color to black initially
+            self.bg = Rectangle(size=Window.size)
             self.root.bind(size=self._update_rect, pos=self._update_rect)
 
         self.logo = Image(source='icon_nobg.png', size_hint=(0.5, 0.5), pos_hint={'center_x': 0.5, 'center_y': 0.5})
         self.root.add_widget(self.logo)
         
         animation = Animation(opacity=0, duration=1)
-        animation.bind(on_complete=self.build_main_layout)
+        animation.bind(on_complete=self.fade_background)
         animation.start(self.logo)
 
         return self.root
@@ -45,20 +45,36 @@ class MyApp(App):
         self.bg.size = instance.size
         self.bg.pos = instance.pos
 
+    def fade_background(self, *args):
+        self.bg_color.a = 1
+        anim = Animation(a=0, duration=1)
+        anim.bind(on_complete=self._change_background_image)
+        anim.start(self.bg_color)
+
+    def _change_background_image(self, *args):
+        with self.root.canvas.before:
+            Color(1, 1, 1, 1)  # Ensure the color is set to white for the image
+            self.bg = Rectangle(source='background.jpg', size=Window.size)
+            self.root.bind(size=self._update_rect, pos=self._update_rect)
+        self.build_main_layout()
+
     def build_main_layout(self, *args):
         self.root.remove_widget(self.logo)
 
-        self.layout = BoxLayout(orientation='vertical', padding=dp(20), spacing=dp(20), size_hint=(0.8, 0.8))
+        self.layout = BoxLayout(orientation='vertical', padding=dp(20), spacing=dp(20), size_hint=(0.9, 0.9))
         self.layout.pos_hint = {'center_x': 0.5, 'center_y': 0.5}
 
-        self.country_button = Button(text='Choose Country', size_hint=(1, 0.1), font_name='white.otf', font_size='40sp')
+        # Make font size responsive based on window size
+        font_size = str(max(20, int(Window.width * 0.04))) + 'sp'
+
+        self.country_button = Button(text='Choose Country', size_hint=(1, 0.1), font_name='white.otf', font_size=font_size)
         self.country_button.bind(on_release=self.show_countries)
 
-        self.city_button = Button(text='Choose City', size_hint=(1, 0.1), font_name='white.otf', font_size='40sp')
+        self.city_button = Button(text='Choose City', size_hint=(1, 0.1), font_name='white.otf', font_size=font_size)
         self.city_button.bind(on_release=self.show_cities)
         self.city_button.disabled = True
 
-        self.weather_label = Label(text="Weather info will be shown here", size_hint=(1, 0.8), font_name='white.otf', font_size='40sp', color=(0, 0, 0, 1))
+        self.weather_label = Label(text="Weather info will be shown here", size_hint=(1, 0.8), font_name='white.otf', font_size=font_size, color=(1, 1, 1, 1))
 
         self.layout.add_widget(self.country_button)
         self.layout.add_widget(self.city_button)
@@ -68,7 +84,7 @@ class MyApp(App):
 
     def show_countries(self, instance):
         self.country_dropdown = DropDown()
-        btn = Button(text='Hungary', size_hint_y=None, height=dp(44), font_name='white.otf', font_size='30sp')
+        btn = Button(text='Hungary', size_hint_y=None, height=dp(44), font_name='white.otf', font_size=str(max(20, int(Window.width * 0.04))) + 'sp')
         btn.bind(on_release=lambda btn: self.select_country(btn.text))
         self.country_dropdown.add_widget(btn)
         self.country_dropdown.open(self.country_button)
@@ -86,7 +102,7 @@ class MyApp(App):
         self.city_dropdown = DropDown()
         for city in hungarian_cities.keys():
             display_city = replace_accented_characters(city)
-            btn = Button(text=display_city.capitalize(), size_hint_y=None, height=dp(44), font_name='white.otf', font_size='30sp')
+            btn = Button(text=display_city.capitalize(), size_hint_y=None, height=dp(44), font_name='white.otf', font_size=str(max(20, int(Window.width * 0.04))) + 'sp')
             btn.bind(on_release=lambda btn: self.select_city(btn.text))
             self.city_dropdown.add_widget(btn)
         self.city_dropdown.open(self.city_button)
