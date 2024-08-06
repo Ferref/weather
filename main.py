@@ -11,7 +11,6 @@ from kivy.metrics import dp
 from kivy.graphics import Color, Rectangle
 from kivy.animation import Animation
 from kivy.uix.slider import Slider
-from kivy.uix.colorpicker import ColorPicker
 import weather_requests
 from locations import hungarian_cities
 from datetime import datetime
@@ -28,7 +27,8 @@ class WeatherScreen(Screen):
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
         self.font_size = max(20, int(Window.width * 0.04))  # Initialize font_size
-        self.font_color = (0, 0, 0, 1)  # Initialize font_color
+        self.title_font_color = (0, 0, 0, 1)  # Initialize title font color to black
+        self.info_font_color = (0, 0, 0, 1)  # Initialize info font color to black
         self.build_ui()
 
     def build_ui(self):
@@ -71,16 +71,16 @@ class WeatherScreen(Screen):
         self.main_layout = BoxLayout(orientation='vertical', padding=dp(20), spacing=dp(20), size_hint=(0.9, 0.9))
         self.main_layout.pos_hint = {'center_x': 0.5, 'center_y': 0.5}
 
-        self.country_button = Button(text='Choose Country', size_hint=(1, 0.1), font_size=self.font_size)
+        self.country_button = Button(text='Choose Country', size_hint=(1, 0.1), font_size=self.font_size, color=self.title_font_color)
         self.country_button.bind(on_release=self.show_countries)
 
-        self.city_button = Button(text='Choose City', size_hint=(1, 0.1), font_size=self.font_size)
+        self.city_button = Button(text='Choose City', size_hint=(1, 0.1), font_size=self.font_size, color=self.title_font_color)
         self.city_button.bind(on_release=self.show_cities)
         self.city_button.disabled = True
 
-        self.weather_label = Label(text="Weather info will be shown here", size_hint=(1, 0.6), font_size=self.font_size, color=self.font_color)
+        self.weather_label = Label(text="Weather info will be shown here", size_hint=(1, 0.6), font_size=self.font_size, color=self.info_font_color)
 
-        self.settings_button = Button(text='Settings', size_hint=(1, 0.1), font_size=self.font_size)
+        self.settings_button = Button(text='Settings', size_hint=(1, 0.1), font_size=self.font_size, color=self.title_font_color)
         self.settings_button.bind(on_release=self.go_to_settings)
 
         self.main_layout.add_widget(self.country_button)
@@ -142,13 +142,16 @@ class WeatherScreen(Screen):
     def update_font_properties(self):
         if hasattr(self, 'country_button'):
             self.country_button.font_size = self.font_size
+            self.country_button.color = self.title_font_color
         if hasattr(self, 'city_button'):
             self.city_button.font_size = self.font_size
+            self.city_button.color = self.title_font_color
         if hasattr(self, 'weather_label'):
             self.weather_label.font_size = self.font_size
-            self.weather_label.color = self.font_color
+            self.weather_label.color = self.info_font_color
         if hasattr(self, 'settings_button'):
             self.settings_button.font_size = self.font_size
+            self.settings_button.color = self.title_font_color
 
 class SettingsScreen(Screen):
     def __init__(self, weather_screen, **kwargs):
@@ -164,27 +167,53 @@ class SettingsScreen(Screen):
         self.font_size_slider = Slider(min=10, max=50, value=self.weather_screen.font_size, size_hint=(1, 0.1))
         self.font_size_slider.bind(value=self.on_font_size_change)
 
-        self.font_color_label = Label(text='Font Color', size_hint=(1, 0.1), font_size=self.weather_screen.font_size)
-        self.color_picker = ColorPicker(size_hint=(1, 0.5))
-        self.color_picker.bind(color=self.on_color_change)
+        self.title_color_label = Label(text='Title Font Color', size_hint=(1, 0.1), font_size=self.weather_screen.font_size)
+        self.title_color_layout = self.build_color_buttons(self.on_title_color_change)
+
+        self.info_color_label = Label(text='Info Font Color', size_hint=(1, 0.1), font_size=self.weather_screen.font_size)
+        self.info_color_layout = self.build_color_buttons(self.on_info_color_change)
 
         self.back_button = Button(text='Back', size_hint=(1, 0.1), font_size=self.weather_screen.font_size)
         self.back_button.bind(on_release=self.go_back)
 
         self.layout.add_widget(self.font_size_label)
         self.layout.add_widget(self.font_size_slider)
-        self.layout.add_widget(self.font_color_label)
-        self.layout.add_widget(self.color_picker)
+        self.layout.add_widget(self.title_color_label)
+        self.layout.add_widget(self.title_color_layout)
+        self.layout.add_widget(self.info_color_label)
+        self.layout.add_widget(self.info_color_layout)
         self.layout.add_widget(self.back_button)
 
         self.add_widget(self.layout)
+
+    def build_color_buttons(self, on_color_change_callback):
+        colors = {
+            "Black": (0, 0, 0, 1),
+            "Red": (1, 0, 0, 1),
+            "Green": (0, 1, 0, 1),
+            "Blue": (0, 0, 1, 1),
+            "Yellow": (1, 1, 0, 1),
+            "Cyan": (0, 1, 1, 1),
+            "Magenta": (1, 0, 1, 1),
+            "White": (1, 1, 1, 1)
+        }
+        color_layout = BoxLayout(orientation='horizontal', spacing=dp(10), size_hint=(1, 0.2))
+        for color_name, color_value in colors.items():
+            btn = Button(background_color=color_value, size_hint=(None, 1), width=dp(40))
+            btn.bind(on_release=lambda instance, clr=color_value: on_color_change_callback(clr))
+            color_layout.add_widget(btn)
+        return color_layout
 
     def on_font_size_change(self, instance, value):
         self.weather_screen.font_size = int(value)
         self.weather_screen.update_font_properties()
 
-    def on_color_change(self, instance, value):
-        self.weather_screen.font_color = value
+    def on_title_color_change(self, color):
+        self.weather_screen.title_font_color = color
+        self.weather_screen.update_font_properties()
+
+    def on_info_color_change(self, color):
+        self.weather_screen.info_font_color = color
         self.weather_screen.update_font_properties()
 
     def go_back(self, instance):
