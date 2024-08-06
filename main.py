@@ -20,7 +20,7 @@ def replace_accented_characters(text):
     return text
 
 class MyApp(App):
-    title = 'SimpleWeather'  # Set the window title here
+    title = 'WeatherBunny'  # Set the window title here
     icon = 'icon_nobg.png'   # Set the application icon
 
     def build(self):
